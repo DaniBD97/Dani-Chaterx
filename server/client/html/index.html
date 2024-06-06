@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../css/styles.css">
+    <title>Chat</title>
+    <script type="module">
+        import { io } from 'https://cdn.socket.io/4.3.2/socket.io.esm.min.js'
+        const formularioEstiloLogin = document.querySelector("#login")
+
+        const form = document.getElementById('form')
+        const logeo = document.getElementById('formLogin')
+        const logout = document.getElementById('Logout')
+        const formLogin = document.getElementById('login')
+        const containerUser = document.getElementById('infoUser-Container')
+
+        const btnRegisterUser = document.getElementById('registerUser');
+
+        const input = document.getElementById('input')
+        const messages = document.getElementById('messages')
+        const infoUsers = document.getElementById('infoUsers')
+        const user = document.getElementById('inputUser')
+        const rooms = document.getElementById('inputRoom')
+
+
+
+        const chat = document.getElementById('chat')
+
+        chat.style.display = "none";
+        logout.style.display = "none"
+        containerUser.style.display = "none";
+
+
+
+        const socket = io({
+            auth: {
+
+                serverOffset: 0
+
+            }
+        })
+        let usuariosEnLinea = [];
+
+        socket.on("login", () => {
+            const nuevoUsuario = user.value.trim();
+            const salaElegida = rooms.value.trim();
+
+            // Añade el nuevo usuario a la lista global
+            usuariosEnLinea.push({ nombre: nuevoUsuario, sala: salaElegida });
+
+            alert("!Bienvenido Usuario " + nuevoUsuario + " Respeta, " + " Elegiste la Sala " + salaElegida);
+
+
+
+
+            containerUser.style.display = "Block"
+            formLogin.style.display = "none";
+            chat.style.display = "Block";
+            logout.style.display = "Block"
+
+        });
+        let Linea = [];
+        socket.on("Active", (data) => {
+            const usersArray = Object.values(data)
+            console.log(data);
+            Linea.push(data.user);
+            console.log(usersArray);
+            infoUsers.innerHTML = "";
+
+            const usernames = usersArray.map(user => {
+                if (user.room === rooms.value) {
+                    infoUsers.insertAdjacentHTML("beforeend", `<li>${user.user}</li>`);
+                }
+            });
+
+            // Utiliza Object.values() para obtener un array de valores del objeto users
+
+
+            // Itera sobre el array de valores
+            // for (const user in users) {
+            //     console.log(user);
+            //     infoUsers.insertAdjacentHTML("beforeend", `<li>${user}</li>`);
+            // }
+        });
+
+
+        // function actualizarListaUsuarios(usuarios) {
+
+        //     infoUsers.innerHTML = "";
+
+        //     // Agrega cada usuario al DOM
+        //     for (const user in usuarios) {
+        //         const item = `<li class="Line">${user}</li>`;
+        //         infoUsers.insertAdjacentHTML('beforeend', item);
+        //     }
+
+        // }
+
+        // user.addEventListener("keypress", function (e) {
+        //     if (e.key === "Enter") {
+
+        //         logeo.submit();
+        //     }
+        // });
+
+        logeo.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (user.value.trim() !== "" && rooms.value.trim() !== "") {
+                let username = user.value.trim();
+                let room = rooms.value.trim();
+                socket.emit("register", username, room);
+            }
+        });
+
+
+
+        socket.on('chat message', (msg, serverOffset, user, room) => {
+
+            const item = `<li>${user}: ${msg}</li>`;
+
+            messages.insertAdjacentHTML('beforeend', item);
+
+            console.log(`Nuevo mensaje en la habitación ${room}: ${user}: ${msg}`);
+            // Almacena el serverOffset directamente en el objeto del socket
+            socket.auth.serverOffset = serverOffset;
+
+            messages.scrollTop = messages.scrollHeight
+        });
+
+
+
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault()
+
+            if (input.value) {
+                socket.emit('chat message', input.value, user.value, rooms.value)
+                input.value = ''
+            }
+        })
+
+        logout.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            socket.disconnect();
+            window.location.href = '/';
+        })
+
+        function disconnect() {
+            // Envia un mensaje al servidor indicando que el usuario quiere desconectarse
+
+            // Desconecta al usuario localmente
+
+        }
+    </script>
+</head>
+<style>
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box;
+    }
+
+    :root {
+        color-scheme: light dark;
+    }
+
+    body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        display: grid;
+        place-content: center;
+        height: 100vh;
+        padding: 36px 36px 100px 36px;
+        grid-template-rows: 1fr;
+    }
+
+    #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+        overflow-y: scroll;
+        height: 100%;
+        scroll-behavior: smooth;
+        padding-bottom: 48px;
+        max-height: 400px;
+        margin-bottom: 5px;
+
+
+    }
+
+    #messages::-webkit-scrollbar {
+        width: 8px;
+        /* Tamaño del scroll en vertical */
+        height: 8px;
+        /* Tamaño del scroll en horizontal */
+        display: none;
+        /* Ocultar scroll */
+    }
+
+    #messages>li {
+        padding: .5rem 1rem;
+    }
+
+    #messages>li:nth-child(odd) {
+        background: #000;
+    }
+
+    #chat {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        overflow: hidden;
+        width: 350px;
+        /* height: 100%; */
+        position: relative;
+    }
+
+    #form {
+        bottom: 0;
+        display: flex;
+        height: 48px;
+        left: 0;
+        padding: 4px;
+        position: absolute;
+        right: 0;
+    }
+
+    #input {
+        border-radius: 9999px;
+        border: 1px solid #eee;
+        flex: 1;
+        margin: 4px;
+        padding: 0 8px;
+    }
+
+    #input:focus {
+        outline: 0;
+    }
+
+    #form>button {
+        background: #09f;
+        color: #fff;
+        border: 0;
+        margin: 4px;
+        border-radius: 4px;
+    }
+
+    #form>button:hover {
+        background: #0cf;
+    }
+
+    #main {
+        display: flex;
+    }
+
+    #infoUsers{
+        border: 2px solid #333;
+        border-color: #ccc;
+    }
+</style>
+
+<body id="main">
+
+    <section id="login" class="login">
+        <h1 class="titleOne">Careful Traveling pick with pacient</h1>
+        <form id="formLogin" class="formLogin">
+            <input type="text" name="inputUser" id="inputUser" placeholder="Type a NickName" autocomplete="off">
+            <input type="text" name="inputRoom" id="inputRoom" placeholder="Type a Room" autocomplete="off">
+            <button type="submit" id="registerUser">Enviar</button>
+        </form>
+    </section>
+
+    <div class="Container">
+
+        <section id="chat" class="chat">
+            <ul id="messages"></ul>
+            <form id="form" >
+                <input type="text" name="message" id="input" placeholder="Type a Message" autocomplete="off">
+                <button type="submit">Enviar</button>
+            </form>
+        </section>
+        <section id="infoUser-Container">
+            <p>Usuarios en Linea</p>
+            <ul id="infoUsers" class="infoUsers">
+
+            </ul>
+            <form id="Logout">
+                <!-- Puedes tener más campos en tu formulario si es necesario -->
+                <button type="submit">Desconectar</button>
+            </form>
+        </section>
+    </div>
+
+
+</body>
+
+</html>
